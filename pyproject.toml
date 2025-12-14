@@ -12,6 +12,7 @@ dependencies = [
     "pymupdf>=1.26.7",
     "python-dotenv>=1.2.1",
     "python-multipart>=0.0.20",
+    "sentence-transformers>=5.2.0",
     "sqlmodel>=0.0.27",
     "uuid>=1.30",
     "uvicorn>=0.38.0",

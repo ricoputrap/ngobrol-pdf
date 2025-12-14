@@ -2,11 +2,13 @@ import os
 from pathlib import Path
 from typing import List
 
+import numpy as np
 from langchain_community.document_loaders import PyMuPDFLoader
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from app.models import File
+from app.rag.EmbeddingManager import embedding_manager
 
 
 def parse_pdf_to_documents(file: File) -> list[Document]:
@@ -82,8 +84,27 @@ def chunk_documents(
     return chunks
 
 
+def generate_embeddings(chunks: List[Document]) -> np.ndarray:
+    """
+    Generate embeddings for the given chunks of text.
+
+    Args:
+        chunks (List[Document]): The list of chunks to generate embeddings for.
+
+    Returns:
+        np.ndarray: A numpy array of embeddings.
+    """
+    list_text = [chunk.page_content for chunk in chunks]
+    embeddings = embedding_manager.generate_embeddings(list_text)
+    return embeddings
+
+
 # TODO finish
 def ingest_file(file: File):
     documents = parse_pdf_to_documents(file)
     chunks = chunk_documents(documents)
-    print(f"Successfully chunked {len(chunks)} documents.")
+    embeddings = generate_embeddings(chunks)
+
+    print(
+        f"Successfully generated embeddings for {len(chunks)} documents. Embeddings shape: {embeddings.shape}"
+    )
