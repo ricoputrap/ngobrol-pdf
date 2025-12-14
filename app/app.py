@@ -3,9 +3,11 @@ import shutil
 import uuid
 
 from fastapi import FastAPI, UploadFile
+from numpy.random import f
 from sqlmodel import select
 
 from app.models import File, SessionDependency
+from app.rag.ingestion import ingest_file, parse_pdf_to_documents
 
 app = FastAPI()
 
@@ -28,11 +30,6 @@ async def upload_file(file: UploadFile, session: SessionDependency):
     if not os.path.exists("uploads"):
         os.makedirs("uploads")
 
-    # upload file to uploads directory
-    file_location = f"uploads/{file.filename}"
-    with open(file_location, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-
     # generate id
     file_id: str = uuid.uuid4().hex[:8]
 
@@ -40,11 +37,23 @@ async def upload_file(file: UploadFile, session: SessionDependency):
     if not file.filename:
         file.filename = f"file_{uuid.uuid4().hex[:8]}.pdf"
 
+    # convert file name to underscore_separated file path
+    file_name = file.filename.replace(" ", "_").lower()
+
+    # upload file to uploads directory
+    file_location = f"uploads/{file_id}_{file_name}"
+    with open(file_location, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
     # save file metadata to database
     new_file = File(id=file_id, name=file.filename, url=file_location)
     session.add(new_file)
     session.commit()
     session.refresh(new_file)
+
+    # documents = parse_pdf_to_documents(new_file)
+    # print(documents)
+    ingest_file(new_file)
 
     return {
         "filename": file.filename,
