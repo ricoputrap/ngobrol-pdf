@@ -3,11 +3,14 @@ import shutil
 import uuid
 
 from fastapi import FastAPI, UploadFile
-from numpy.random import f
 from sqlmodel import select
 
 from app.models import File, SessionDependency
-from app.rag.ingestion import ingest_file, parse_pdf_to_documents
+from app.rag.EmbeddingManager import embedding_manager
+from app.rag.ingestion import ingest_file
+from app.rag.Retriever import Retriever
+from app.rag.VectorStore import vector_store
+from app.schemas import AskRequest
 
 app = FastAPI()
 
@@ -52,11 +55,32 @@ async def upload_file(file: UploadFile, session: SessionDependency):
     session.refresh(new_file)
 
     # documents = parse_pdf_to_documents(new_file)
-    # print(documents)
     ingest_file(new_file)
+
+    # retrieve relevant documents from vector store
+    # retriever = Retriever(vector_store, embedding_manager)
 
     return {
         "filename": file.filename,
         "message": f"File saved at {file_location}",
         "file": new_file,
+    }
+
+
+@app.post("/ask")
+def ask(request: AskRequest):
+    file_id = request.file_id
+    question = request.question
+
+    # retrieve relevant documents from vector store
+    retriever = Retriever(vector_store, embedding_manager)
+
+    # retrieve relevant documents from vector store
+    relevant_documents = retriever.retrieve(question, 5, 0.0, file_id)
+
+    return {
+        "question": question,
+        "file_id": file_id,
+        "message": "Answering your question...",
+        "relevant_documents": relevant_documents,
     }
