@@ -9,6 +9,7 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from app.models import File
 from app.rag.EmbeddingManager import embedding_manager
+from app.rag.VectorStore import vector_store
 
 
 def parse_pdf_to_documents(file: File) -> list[Document]:
@@ -40,8 +41,8 @@ def parse_pdf_to_documents(file: File) -> list[Document]:
 
         # augment metadata
         for doc in documents:
-            doc.metadata["id"] = file.id
-            doc.metadata["name"] = file.name
+            doc.metadata["file_id"] = file.id
+            doc.metadata["file_name"] = file.name
             # doc.metadata["user_id"] = file.user_id
 
         print(f"Successfully loaded {len(documents)} pages.")
@@ -99,12 +100,10 @@ def generate_embeddings(chunks: List[Document]) -> np.ndarray:
     return embeddings
 
 
-# TODO finish
 def ingest_file(file: File):
     documents = parse_pdf_to_documents(file)
     chunks = chunk_documents(documents)
     embeddings = generate_embeddings(chunks)
+    vector_store.add_documents(chunks, embeddings)
 
-    print(
-        f"Successfully generated embeddings for {len(chunks)} documents. Embeddings shape: {embeddings.shape}"
-    )
+    print("Successfully ingested file.")
