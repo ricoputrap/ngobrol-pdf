@@ -1,3 +1,4 @@
+import time
 from typing import Any, Dict, List
 
 from app.rag.EmbeddingManager import EmbeddingManager
@@ -47,13 +48,17 @@ class Retriever:
 
         try:
             if self.vector_store.collection:
+                retrieval_start_time = time.time()
                 # retrieve documents from the vector store
                 query_results = self.vector_store.collection.query(
                     query_embeddings=[query_embedding.tolist()],
                     n_results=top_k,
                     where={"file_id": file_id},
                 )
+                duration = time.time() - retrieval_start_time
+                print(f"Query duration: {duration:.4f} seconds")
 
+                post_retrieval_start_time = time.time()
                 # deconstruct query results
                 ids = query_results["ids"][0]
                 documents, metadatas, distances = [], [], []
@@ -82,7 +87,11 @@ class Retriever:
                             }
                         )
 
-                print(f"Retrieved {len(retrieved_docs)} documents after filtering")
+                print(f"Retrieved {len(retrieved_docs)} documents after filtering.")
+                post_retrieval_duration = time.time() - post_retrieval_start_time
+                print(
+                    f"Post-retrieval processing duration: {post_retrieval_duration:.4f} seconds"
+                )
 
         except Exception as e:
             print(f"Error retrieving documents: {e}")
