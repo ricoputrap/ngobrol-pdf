@@ -8,6 +8,7 @@ from sqlmodel import select
 from app.models import File, SessionDependency
 from app.rag.EmbeddingManager import embedding_manager
 from app.rag.ingestion import ingest_file
+from app.rag.main import simple_rag
 from app.rag.Retriever import Retriever
 from app.rag.VectorStore import vector_store
 from app.schemas import AskRequest
@@ -72,15 +73,12 @@ def ask(request: AskRequest):
     file_id = request.file_id
     question = request.question
 
-    # retrieve relevant documents from vector store
-    retriever = Retriever(vector_store, embedding_manager)
-
-    # retrieve relevant documents from vector store
-    relevant_documents = retriever.retrieve(question, 5, 0.0, file_id)
+    # process the question
+    answer = simple_rag(question, file_id)
 
     return {
         "question": question,
         "file_id": file_id,
         "message": "Answering your question...",
-        "relevant_documents": relevant_documents,
+        "answer": answer,
     }
